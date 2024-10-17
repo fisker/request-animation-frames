@@ -1,4 +1,4 @@
-export default function requestAnimationFrames() {
+export default async function * requestAnimationFrames() {
 	const hasRaf = typeof globalThis.requestAnimationFrame === 'function';
 
 	const requestFrame = hasRaf
@@ -9,28 +9,24 @@ export default function requestAnimationFrames() {
 		? globalThis.cancelAnimationFrame
 		: id => clearTimeout(id);
 
-	return {
-		async * [Symbol.asyncIterator]() {
-			let requestId;
+	let requestId;
 
-			try {
-				yield performance.now();
+	try {
+		yield performance.now();
 
-				// Ensure the RAF timestamp comes after our custom one.
-				// In some cases without this, the `performance.now()`
-				// call above would return the same timestamp as RAF.
-				await new Promise(resolve => {
-					setTimeout(resolve, 1);
-				});
+		// Ensure the RAF timestamp comes after our custom one.
+		// In some cases without this, the `performance.now()`
+		// call above would return the same timestamp as RAF.
+		await new Promise(resolve => {
+			setTimeout(resolve, 1);
+		});
 
-				while (true) {
-					yield await new Promise(resolve => { // eslint-disable-line no-await-in-loop
-						requestId = requestFrame(resolve);
-					});
-				}
-			} finally {
-				cancelFrame(requestId);
-			}
-		},
-	};
+		while (true) {
+			yield await new Promise(resolve => { // eslint-disable-line no-await-in-loop
+				requestId = requestFrame(resolve);
+			});
+		}
+	} finally {
+		cancelFrame(requestId);
+	}
 }
